@@ -28,5 +28,6 @@ in
       cargo
       libusb1
       pkg-config
+      gcc
     ];
   }

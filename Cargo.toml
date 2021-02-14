@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 hidapi = "1.2.5"
+bitflags = "1.0"
