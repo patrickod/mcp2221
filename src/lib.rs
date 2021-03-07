@@ -1,60 +1,146 @@
-#[macro_use]
-extern crate bitflags;
+extern crate hidapi;
+extern crate num_enum;
+
+use std::iter;
+
+use hidapi::{HidApi, HidDevice};
+use num_enum::IntoPrimitive;
 
 pub const VENDOR_ID: u16 = 0x04d8;
 pub const PRODUCT_ID: u16 = 0x00dd;
 
-pub struct Mcp2221 {}
+pub struct Mcp2221 {
+    device: HidDevice,
+}
 
-type GPIOConfig = u8;
-type Response = Option<[u8; 64]>;
+#[derive(Debug)]
+pub enum Error {
+    HidUnavailable,
+    DeviceNotFound,
+    DeviceInaccessible,
+    DeviceUnexpectedError,
+}
 
-impl Mcp2221 {
-    fn new() -> Mcp2221 {
-        Mcp2221{}
-    }
+type Response = [u8; 64];
 
-    fn reset(&mut self) {
-        unimplemented!()
-    }
+#[allow(non_camel_case_types)]
+#[repr(u8)]
+#[derive(IntoPrimitive)]
+pub enum Command {
+    // Misc commands
+    STATUS = 0x10,
+    READ_FLASH_DATA = 0xb0,
+    WRITE_FLASH_DATA = 0xb1,
 
-    fn gpio_read(&self) -> Response {
-        unimplemented!()
-    }
+    // IC2 transfer commands
+    I2C_WRITE_DATA = 0x90,
+    I2C_WRITE_DATA_REPEATED_START = 0x92,
+    I2C_WRITE_DATA_NO_STOP = 0x94,
+    I2C_READ_DATA_COMMAND = 0x91,
+    I2C_READ_DATA_COMMAND_REPEATED_START = 0x93,
+    I2C_READ_DATA_GET_DATA = 0x40,
 
-    fn gpio_write(&self) -> Response {
-        unimplemented!()
-    }
-
-    fn gp_set_mode(&mut self) -> Response {
-        unimplemented!()
-    }
-
-    fn gp_set_direction(&mut self) -> Response {
-        unimplemented!()
-    }
-
-    fn i2c_write(&self) -> Response {
-        unimplemented!()
-    }
-
-    fn i2c_read(&self) -> Response {
-        unimplemented!()
-    }
-
-    fn i2c_write_read(&self) -> Response {
-        unimplemented!()
-    }
-
-    fn hid_transfer(&mut self) -> Response {
-        unimplemented!()
-    }
+    RESET = 0x70,
 
 }
 
+impl Mcp2221 {
+    pub fn new() -> Result<Mcp2221, Error> {
+        let hidapi = match HidApi::new() {
+            Ok(api) => api,
+            Err(_) => {
+                return Err(Error::HidUnavailable);
+            }
+        };
+
+        for device in hidapi.device_list() {
+            if device.vendor_id() == VENDOR_ID && device.product_id() == PRODUCT_ID {
+                match device.open_device(&hidapi) {
+                    Ok(device) => return Ok(Mcp2221 { device }),
+                    Err(_) => return Err(Error::DeviceInaccessible),
+                };
+            }
+        }
+        Err(Error::DeviceNotFound)
+    }
+
+    fn _hid_write(&mut self, payload: &[u8]) -> Result<(), Error> {
+        let mut report = vec![0u8];
+        report.extend_from_slice(payload);
+        report.extend(iter::repeat(0u8).take(64 - payload.len()));
+
+        match self.device.write(&report) {
+            Ok(written) => {
+                if written != report.len() {
+                    return Err(Error::DeviceUnexpectedError);
+                } else {
+                    Ok(())
+                }
+            }
+            Err(_) => return Err(Error::DeviceUnexpectedError),
+        }
+    }
+
+    fn _hid_read(&mut self, response: &mut Vec<u8>) -> Result<usize, Error> {
+        let mut buffer = vec![0u8; 64];
+        match self.device.read(&mut buffer) {
+            Ok(count) => {
+                response.extend_from_slice(&buffer);
+                Ok(count)
+            }
+            Err(_) => Err(Error::DeviceUnexpectedError),
+        }
+    }
+
+    pub fn reset(&mut self) -> Result<(), Error> {
+         self._hid_write(&[Command::RESET.into()])
+    }
+
+    pub fn status(&mut self) -> Result<Vec<u8>, Error> {
+        self._hid_write(&[Command::STATUS.into()])?;
+        let mut buffer: Vec<u8> = Vec::new();
+        match self._hid_read(&mut buffer) {
+            Ok(_) => Ok(buffer.to_owned()),
+            Err(_) => Err(Error::DeviceUnexpectedError)
+        }
+    }
+
+    pub fn gpio_read(&self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn gpio_write(&self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn gp_set_mode(&mut self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn gp_set_direction(&mut self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn i2c_write(&self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn i2c_read(&self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn i2c_write_read(&self) -> Response {
+        unimplemented!()
+    }
+
+    pub fn hid_transfer(&mut self) -> Response {
+        unimplemented!()
+    }
+}
 
 #[cfg(test)]
 mod tests {
+
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
