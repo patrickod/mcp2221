@@ -1,7 +1,11 @@
 extern crate hidapi;
 extern crate num_enum;
+extern crate packed_struct;
+
+mod types;
 
 use std::iter;
+use types::*;
 
 use hidapi::{HidApi, HidDevice};
 use num_enum::IntoPrimitive;
@@ -11,6 +15,18 @@ pub const PRODUCT_ID: u16 = 0x00dd;
 
 pub struct Mcp2221 {
     device: HidDevice,
+}
+
+pub enum GPPin {
+    Pin0,
+    Pin1,
+    Pin2,
+    Pin3,
+}
+
+enum WriteFlashDataSubCode {
+    WriteChipSettings = 0x00,
+    WriteGpSettings = 0x01
 }
 
 #[derive(Debug)]
@@ -105,37 +121,10 @@ impl Mcp2221 {
         }
     }
 
-    pub fn gpio_read(&self) -> Response {
+    pub fn gp0_set_mode(&mut self mode: GP0OperatingMode) -> Response {
         unimplemented!()
     }
 
-    pub fn gpio_write(&self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn gp_set_mode(&mut self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn gp_set_direction(&mut self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn i2c_write(&self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn i2c_read(&self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn i2c_write_read(&self) -> Response {
-        unimplemented!()
-    }
-
-    pub fn hid_transfer(&mut self) -> Response {
-        unimplemented!()
-    }
 }
 
 #[cfg(test)]
