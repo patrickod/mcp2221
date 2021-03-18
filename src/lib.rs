@@ -1,8 +1,4 @@
-extern crate hidapi;
-extern crate num_enum;
-extern crate packed_struct;
-
-mod types;
+pub mod types;
 
 use std::iter;
 use types::*;
@@ -15,18 +11,6 @@ pub const PRODUCT_ID: u16 = 0x00dd;
 
 pub struct Mcp2221 {
     device: HidDevice,
-}
-
-pub enum GPPin {
-    Pin0,
-    Pin1,
-    Pin2,
-    Pin3,
-}
-
-enum WriteFlashDataSubCode {
-    WriteChipSettings = 0x00,
-    WriteGpSettings = 0x01
 }
 
 #[derive(Debug)]
@@ -57,7 +41,6 @@ pub enum Command {
     I2C_READ_DATA_GET_DATA = 0x40,
 
     RESET = 0x70,
-
 }
 
 impl Mcp2221 {
@@ -109,7 +92,7 @@ impl Mcp2221 {
     }
 
     pub fn reset(&mut self) -> Result<(), Error> {
-         self._hid_write(&[Command::RESET.into()])
+        self._hid_write(&[Command::RESET.into()])
     }
 
     pub fn status(&mut self) -> Result<Vec<u8>, Error> {
@@ -117,14 +100,9 @@ impl Mcp2221 {
         let mut buffer: Vec<u8> = Vec::new();
         match self._hid_read(&mut buffer) {
             Ok(_) => Ok(buffer.to_owned()),
-            Err(_) => Err(Error::DeviceUnexpectedError)
+            Err(_) => Err(Error::DeviceUnexpectedError),
         }
     }
-
-    pub fn gp0_set_mode(&mut self mode: GP0OperatingMode) -> Response {
-        unimplemented!()
-    }
-
 }
 
 #[cfg(test)]
